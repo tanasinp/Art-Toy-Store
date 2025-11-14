@@ -1,0 +1,228 @@
+/* === Import tailwind core === */
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* === Custom dark variant === */
+@custom-variant dark (&:is(.dark *));
+
+/* === Theme Tokens / CSS Variables === */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 10%;
+
+    --primary: 16 90% 58%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 174 62% 47%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 240 4% 46%;
+
+    --accent: 16 90% 58%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 16 90% 58%;
+
+    --radius: 0.75rem;
+
+    --gradient-primary: linear-gradient(135deg, hsl(16 90% 58%) 0%, hsl(340 82% 62%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(174 62% 47%) 0%, hsl(197 71% 52%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(16 90% 58% / 0.1) 0%, hsl(174 62% 47% / 0.1) 100%);
+
+    --shadow-soft: 0 2px 8px -2px hsl(240 10% 10% / 0.08);
+    --shadow-medium: 0 4px 16px -4px hsl(240 10% 10% / 0.12);
+    --shadow-large: 0 8px 32px -8px hsl(240 10% 10% / 0.16);
+
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dark {
+    --background: 240 10% 8%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 12%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 12%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 16 90% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 174 62% 47%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 10% 16%;
+    --muted-foreground: 240 5% 64%;
+    --accent: 16 90% 58%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 10% 20%;
+    --input: 240 10% 20%;
+    --ring: 16 90% 58%;
+    --gradient-primary: linear-gradient(135deg, hsl(16 90% 58%) 0%, hsl(340 82% 62%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(174 62% 47%) 0%, hsl(197 71% 52%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(16 90% 58% / 0.15) 0%, hsl(174 62% 47% / 0.15) 100%);
+    --shadow-soft: 0 2px 8px -2px hsl(0 0% 0% / 0.3);
+    --shadow-medium: 0 4px 16px -4px hsl(0 0% 0% / 0.4);
+    --shadow-large: 0 8px 32px -8px hsl(0 0% 0% / 0.5);
+  }
+}
+
+/* === Global Resets === */
+@layer base {
+  * {
+    border-color: var(--border);
+    outline-color: color-mix(in oklch, var(--ring) 50%, transparent);
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+}
+
+
+/* === Animation + Logo Styles === */
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+/* === Tailwind utility aliases for all theme tokens === */
+@layer utilities {
+  /* === Backgrounds & Text === */
+  .bg-background {
+    background-color: hsl(var(--background));
+  }
+  .text-foreground {
+    color: hsl(var(--foreground));
+  }
+
+  /* === Card === */
+  .bg-card {
+    background-color: hsl(var(--card));
+  }
+  .text-card-foreground {
+    color: hsl(var(--card-foreground));
+  }
+
+  /* === Popover === */
+  .bg-popover {
+    background-color: hsl(var(--popover));
+  }
+  .text-popover-foreground {
+    color: hsl(var(--popover-foreground));
+  }
+
+  /* === Primary === */
+  .bg-primary {
+    background-color: hsl(var(--primary));
+  }
+  .text-primary-foreground {
+    color: hsl(var(--primary-foreground));
+  }
+
+  /* === Secondary === */
+  .bg-secondary {
+    background-color: hsl(var(--secondary));
+  }
+  .text-secondary-foreground {
+    color: hsl(var(--secondary-foreground));
+  }
+
+  /* === Muted === */
+  .bg-muted {
+    background-color: hsl(var(--muted));
+  }
+  .text-muted-foreground {
+    color: hsl(var(--muted-foreground));
+  }
+
+  /* === Accent === */
+  .bg-accent {
+    background-color: hsl(var(--accent));
+  }
+  .text-accent-foreground {
+    color: hsl(var(--accent-foreground));
+  }
+
+  /* === Destructive === */
+  .bg-destructive {
+    background-color: hsl(var(--destructive));
+  }
+  .text-destructive-foreground {
+    color: hsl(var(--destructive-foreground));
+  }
+
+  /* === Border & Input === */
+  .border-border {
+    border-color: hsl(var(--border));
+  }
+  .border-input {
+    border-color: hsl(var(--input));
+  }
+
+  /* === Ring === */
+  .ring-ring {
+    --tw-ring-color: hsl(var(--ring));
+  }
+
+  /* === Shadows === */
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  .shadow-medium {
+    box-shadow: var(--shadow-medium);
+  }
+  .shadow-large {
+    box-shadow: var(--shadow-large);
+  }
+
+  /* === Gradients === */
+  .bg-gradient-primary {
+    background-image: var(--gradient-primary);
+  }
+  .bg-gradient-secondary {
+    background-image: var(--gradient-secondary);
+  }
+  .bg-gradient-hero {
+    background-image: var(--gradient-hero);
+  }
+  .icon-primary {
+    stroke: hsl(var(--primary));
+    color: hsl(var(--primary));
+  }
+}

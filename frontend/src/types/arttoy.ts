@@ -1,5 +1,5 @@
 export interface ArtToy {
-  id: string;
+  _id: string;
   sku: string;
   name: string;
   description: string;
@@ -16,5 +16,5 @@ export interface Order {
   artToy?: ArtToy;
   orderAmount: number;
   createdAt: string;
-  status?: 'pending' | 'confirmed' | 'cancelled';
+  status?: "pending" | "confirmed" | "cancelled";
 }

@@ -1,10 +1,10 @@
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { ArtToy } from '@/types/arttoy';
-import Link from 'next/link';
-import { Calendar, Package } from 'lucide-react';
-import { format } from 'date-fns';
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ArtToy } from "@/types/arttoy";
+import Link from "next/link";
+import { Calendar, Package } from "lucide-react";
+import { format } from "date-fns";
 
 interface ArtToyCardProps {
   artToy: ArtToy;
@@ -26,15 +26,17 @@ const ArtToyCard = ({ artToy }: ArtToyCardProps) => {
       <CardContent className="p-4 space-y-2">
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-semibold text-lg line-clamp-1">{artToy.name}</h3>
-          <Badge variant={isAvailable ? 'default' : 'secondary'}>
-            {isAvailable ? 'Available' : 'Sold Out'}
+          <Badge variant={isAvailable ? "default" : "secondary"}>
+            {isAvailable ? "Available" : "Sold Out"}
           </Badge>
         </div>
-        <p className="text-sm text-muted-foreground line-clamp-2">{artToy.description}</p>
+        <p className="text-sm text-muted-foreground line-clamp-2">
+          {artToy.description}
+        </p>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <Calendar className="h-4 w-4" />
-            <span>{format(arrivalDate, 'MMM dd, yyyy')}</span>
+            <span>{format(arrivalDate, "MMM dd, yyyy")}</span>
           </div>
           <div className="flex items-center gap-1">
             <Package className="h-4 w-4" />
@@ -44,8 +46,8 @@ const ArtToyCard = ({ artToy }: ArtToyCardProps) => {
       </CardContent>
       <CardFooter className="p-4 pt-0">
         <Button asChild className="w-full" disabled={!isAvailable}>
-          <Link href={`/arttoy/${artToy.id}`}>
-            {isAvailable ? 'View Details' : 'Out of Stock'}
+          <Link href={`/arttoy/${artToy._id}`}>
+            {isAvailable ? "View Details" : "Out of Stock"}
           </Link>
         </Button>
       </CardFooter>

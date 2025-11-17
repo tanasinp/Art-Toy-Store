@@ -1,57 +1,95 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import Navigation from '@/components/Navigation';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
-import { Calendar, Package, ArrowLeft, Minus, Plus } from 'lucide-react';
-import { format } from 'date-fns';
-
-const mockArtToy = {
-  id: '1',
-  sku: 'AT-001',
-  name: 'Cosmic Explorer',
-  description:
-    'Limited edition space-themed collectible figure with LED features. This stunning piece combines artistic craftsmanship with modern technology, featuring intricate details and premium materials. Perfect for collectors and enthusiasts alike.',
-  arrivalDate: '2025-12-01',
-  availableQuota: 50,
-  posterPicture:
-    'https://images.unsplash.com/photo-1581235720704-06d3acfcb36f?w=800&q=80',
-  price: 299,
-};
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import Navigation from "@/components/Navigation";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { Calendar, Package, ArrowLeft, Minus, Plus } from "lucide-react";
+import { format } from "date-fns";
 
 export default function ArtToyDetail() {
   const params = useParams();
   const router = useRouter();
   const { isAuthenticated, user } = useAuth();
   const [quantity, setQuantity] = useState(1);
-  const [artToy] = useState(mockArtToy);
+  const [artToy, setArtToy] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchArtToy = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/arttoys/${params.id}`
+        );
+        const json = await res.json();
+        if (res.ok && json.data) {
+          setArtToy(json.data);
+        } else {
+          toast.error(json.message || "Failed to load art toy");
+          router.push("/");
+        }
+      } catch {
+        toast.error("Failed to load art toy");
+        router.push("/");
+      }
+    };
+
+    if (params?.id) fetchArtToy();
+  }, [params?.id, router]);
+
+  if (!artToy) return null;
 
   const isAvailable = artToy.availableQuota > 0;
   const arrivalDate = new Date(artToy.arrivalDate);
   const maxQuantity = Math.min(5, artToy.availableQuota);
 
-  const handlePreOrder = () => {
+  const handlePreOrder = async () => {
     if (!isAuthenticated) {
-      toast.error('Please login to place a pre-order');
-      router.push('/login');
+      toast.error("Please login to place a pre-order");
+      router.push("/login");
       return;
     }
 
-    if (user?.role !== 'member') {
-      toast.error('Only members can place pre-orders');
+    if (!user?.role) {
+      toast.error("Only members can place pre-orders");
       return;
     }
 
-    toast.success(`Pre-order placed for ${quantity} unit(s)!`);
-    router.push('/orders');
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/orders`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            artToy: artToy._id,
+            orderAmount: quantity,
+          }),
+        }
+      );
+
+      const json = await res.json();
+
+      if (res.ok && json.data) {
+        toast.success("Order created successfully");
+        router.push("/orders");
+      } else {
+        toast.error(json.message || "Failed to place order");
+      }
+    } catch {
+      toast.error("Failed to place order");
+    }
   };
 
   const handleQuantityChange = (delta: number) => {
@@ -72,7 +110,6 @@ export default function ArtToyDetail() {
         </Button>
 
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
-          {/* Image Section */}
           <div className="space-y-4">
             <div className="aspect-square overflow-hidden rounded-lg bg-muted shadow-large">
               <img
@@ -83,16 +120,17 @@ export default function ArtToyDetail() {
             </div>
           </div>
 
-          {/* Details Section */}
           <div className="space-y-6">
             <div>
               <div className="flex items-start justify-between gap-4 mb-2">
-                <h1 className="text-3xl md:text-4xl font-bold">{artToy.name}</h1>
+                <h1 className="text-3xl md:text-4xl font-bold">
+                  {artToy.name}
+                </h1>
                 <Badge
-                  variant={isAvailable ? 'default' : 'secondary'}
+                  variant={isAvailable ? "default" : "secondary"}
                   className="text-sm"
                 >
-                  {isAvailable ? 'Available' : 'Sold Out'}
+                  {isAvailable ? "Available" : "Sold Out"}
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground">SKU: {artToy.sku}</p>
@@ -110,15 +148,19 @@ export default function ArtToyDetail() {
                     <span className="text-muted-foreground">Arrival Date:</span>
                   </div>
                   <span className="font-medium">
-                    {format(arrivalDate, 'MMMM dd, yyyy')}
+                    {format(arrivalDate, "MMMM dd, yyyy")}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm">
                     <Package className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Available Quota:</span>
+                    <span className="text-muted-foreground">
+                      Available Quota:
+                    </span>
                   </div>
-                  <span className="font-medium">{artToy.availableQuota} units</span>
+                  <span className="font-medium">
+                    {artToy.availableQuota} units
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -127,7 +169,9 @@ export default function ArtToyDetail() {
               <div className="flex items-end justify-between mb-6">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Price</p>
-                  <p className="text-3xl font-bold">${artToy.price}</p>
+                  <p className="text-3xl font-bold">
+                    {artToy.price ? `$${artToy.price}` : "N/A"}
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="quantity" className="text-sm">
@@ -148,7 +192,10 @@ export default function ArtToyDetail() {
                       value={quantity}
                       onChange={(e) =>
                         setQuantity(
-                          Math.max(1, Math.min(maxQuantity, parseInt(e.target.value) || 1))
+                          Math.max(
+                            1,
+                            Math.min(maxQuantity, parseInt(e.target.value) || 1)
+                          )
                         )
                       }
                       className="w-20 text-center"
@@ -174,15 +221,15 @@ export default function ArtToyDetail() {
                 onClick={handlePreOrder}
                 disabled={!isAvailable}
               >
-                {isAvailable ? 'Place Pre-Order' : 'Out of Stock'}
+                {isAvailable ? "Place Pre-Order" : "Out of Stock"}
               </Button>
 
               {!isAuthenticated && isAvailable && (
                 <p className="text-sm text-muted-foreground text-center mt-4">
-                  Please{' '}
+                  Please{" "}
                   <Link href="/login" className="text-primary hover:underline">
                     login
-                  </Link>{' '}
+                  </Link>{" "}
                   to place a pre-order
                 </p>
               )}

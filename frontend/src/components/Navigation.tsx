@@ -1,20 +1,26 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/contexts/ThemeContext';
-import { Button } from '@/components/ui/button';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { Button } from "@/components/ui/button";
 import {
-  Moon, Sun, ShoppingBag, User, LogOut, LayoutDashboard, Package
-} from 'lucide-react';
+  Moon,
+  Sun,
+  ShoppingBag,
+  User,
+  LogOut,
+  LayoutDashboard,
+  Package,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 
 export default function Navigation() {
   const { user, logout, isAuthenticated } = useAuth();
@@ -35,8 +41,17 @@ export default function Navigation() {
           </Link>
 
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full">
-              {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              className="rounded-full"
+            >
+              {theme === "light" ? (
+                <Moon className="h-5 w-5" />
+              ) : (
+                <Sun className="h-5 w-5" />
+              )}
             </Button>
 
             {isAuthenticated ? (
@@ -54,15 +69,23 @@ export default function Navigation() {
                       Profile
                     </Link>
                   </DropdownMenuItem>
-                  {user?.role === 'admin' && (
-                    <DropdownMenuItem asChild>
-                      <Link href="/admin" className="w-full cursor-pointer">
-                        <LayoutDashboard className="mr-2 h-4 w-4" />
-                        Admin Dashboard
-                      </Link>
-                    </DropdownMenuItem>
+                  {user?.role === "admin" && (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin" className="w-full cursor-pointer">
+                          <LayoutDashboard className="mr-2 h-4 w-4" />
+                          Admin Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/orders" className="w-full cursor-pointer">
+                          <Package className="mr-2 h-4 w-4" />
+                          All Orders
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
                   )}
-                  {user?.role === 'member' && (
+                  {user?.role === "member" && (
                     <DropdownMenuItem asChild>
                       <Link href="/orders" className="w-full cursor-pointer">
                         <Package className="mr-2 h-4 w-4" />
@@ -71,7 +94,10 @@ export default function Navigation() {
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout} className="cursor-pointer text-destructive">
+                  <DropdownMenuItem
+                    onClick={logout}
+                    className="cursor-pointer text-destructive"
+                  >
                     <LogOut className="mr-2 h-4 w-4" />
                     Logout
                   </DropdownMenuItem>

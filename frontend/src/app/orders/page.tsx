@@ -1,61 +1,127 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import Navigation from '@/components/Navigation';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Order } from '@/types/arttoy';
-import { format } from 'date-fns';
-import { Package, Edit, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { useState, useEffect } from "react";
+import Navigation from "@/components/Navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { Edit, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
 
-const mockOrders: Order[] = [
-  {
-    id: '1',
-    userId: '1',
-    artToyId: '1',
-    orderAmount: 2,
-    createdAt: '2025-11-10',
-    status: 'pending',
-    artToy: {
-      id: '1',
-      sku: 'AT-001',
-      name: 'Cosmic Explorer',
-      description: 'Limited edition space-themed collectible',
-      arrivalDate: '2025-12-01',
-      availableQuota: 50,
-      posterPicture:
-        'https://images.unsplash.com/photo-1581235720704-06d3acfcb36f?w=500&q=80',
-      price: 299,
-    },
-  },
-];
+export default function OrdersPage() {
+  const [orders, setOrders] = useState<any[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<any | null>(null);
+  const [orderAmount, setOrderAmount] = useState(1);
 
-export default function Orders() {
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  // Fetch orders
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const token = localStorage.getItem("token");
 
-  const handleEdit = (orderId: string) => {
-    toast.info('Edit order functionality - to be implemented');
-  };
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/orders`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
 
-  const handleDelete = (orderId: string) => {
-    setOrders(orders.filter((order) => order.id !== orderId));
-    toast.success('Order cancelled successfully');
-  };
+        const json = await res.json();
+        setOrders(Array.isArray(json.data) ? json.data : []);
+      } catch {
+        toast.error("Failed to fetch orders");
+        setOrders([]);
+      }
+    };
+    fetchOrders();
+  }, []);
 
-  const getStatusColor = (status?: string) => {
-    switch (status) {
-      case 'confirmed':
-        return 'default';
-      case 'pending':
-        return 'secondary';
-      case 'cancelled':
-        return 'destructive';
-      default:
-        return 'outline';
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!editingOrder) return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/orders/${editingOrder._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ orderAmount }),
+        }
+      );
+
+      const json = await res.json();
+      if (res.ok && json.data) {
+        setOrders(
+          orders.map((order) =>
+            order._id === editingOrder._id ? json.data : order
+          )
+        );
+        toast.success("Order updated successfully");
+      } else {
+        toast.error(json.message || "Failed to update order");
+        return;
+      }
+    } catch {
+      toast.error("Failed to update order");
     }
+
+    resetForm();
+  };
+
+  const handleEdit = (order: any) => {
+    setEditingOrder(order);
+    setOrderAmount(order.orderAmount);
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/orders/${id}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const json = await res.json();
+      if (res.ok) {
+        setOrders(orders.filter((order) => order._id !== id));
+        toast.success("Order cancelled");
+      } else {
+        toast.error(json.message || "Failed to cancel order");
+      }
+    } catch {
+      toast.error("Failed to cancel order");
+    }
+  };
+
+  const resetForm = () => {
+    setOrderAmount(1);
+    setEditingOrder(null);
+    setIsDialogOpen(false);
   };
 
   return (
@@ -63,95 +129,91 @@ export default function Orders() {
       <Navigation />
 
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">My Pre-Orders</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage your art toy pre-orders
-          </p>
-        </div>
+        <h1 className="text-3xl font-bold mb-2">My Orders</h1>
+        <p className="text-muted-foreground mb-8">
+          View and manage your toy pre-orders
+        </p>
 
-        {orders.length > 0 ? (
-          <div className="grid gap-4">
-            {orders.map((order) => (
-              <Card key={order.id}>
-                <CardContent className="p-6">
-                  <div className="flex gap-6">
-                    {order.artToy && (
-                      <img
-                        src={order.artToy.posterPicture}
-                        alt={order.artToy.name}
-                        className="w-32 h-32 object-cover rounded-lg"
-                      />
-                    )}
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="text-xl font-semibold">
-                            {order.artToy?.name}
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            Order ID: {order.id}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleEdit(order.id)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleDelete(order.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </div>
+        {/* Edit Dialog */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Edit Order</DialogTitle>
+              <DialogDescription>
+                Modify your pre-order amount (1–5)
+              </DialogDescription>
+            </DialogHeader>
 
-                      <p className="text-muted-foreground">
-                        {order.artToy?.description}
-                      </p>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Order Amount</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={5}
+                  value={orderAmount}
+                  onChange={(e) => setOrderAmount(parseInt(e.target.value))}
+                  required
+                />
+              </div>
 
-                      <div className="flex items-center gap-4 text-sm flex-wrap">
-                        <Badge variant={getStatusColor(order.status)}>
-                          {order.status?.toUpperCase() || 'PENDING'}
-                        </Badge>
-                        <div className="flex items-center gap-1">
-                          <Package className="h-4 w-4 text-muted-foreground" />
-                          <span>Quantity: {order.orderAmount}</span>
-                        </div>
-                        <span className="text-muted-foreground">
-                          Ordered: {format(new Date(order.createdAt), 'MMM dd, yyyy')}
-                        </span>
-                        {order.artToy?.price && (
-                          <span className="font-semibold">
-                            Total: ${order.artToy.price * order.orderAmount}
-                          </span>
-                        )}
-                      </div>
+              <DialogFooter>
+                <Button variant="outline" type="button" onClick={resetForm}>
+                  Cancel
+                </Button>
+                <Button type="submit">Update</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Orders list */}
+        <div className="grid gap-4">
+          {orders.length === 0 && (
+            <p className="text-sm text-muted-foreground">No orders found.</p>
+          )}
+
+          {orders.map((order) => (
+            <Card key={order._id}>
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-semibold">
+                      {order.artToy?.name}
+                    </h3>
+                    <div className="flex gap-3 text-sm">
+                      <Badge variant="outline">Qty: {order.orderAmount}</Badge>
+                      <Badge variant="outline">
+                        Quota Left: {order?.artToy?.availableQuota}
+                      </Badge>
                     </div>
+                    <p className="text-sm text-muted-foreground">
+                      Ordered on:{" "}
+                      {format(new Date(order.createdAt), "MMM dd, yyyy")}
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-xl font-semibold mb-2">No orders yet</h3>
-              <p className="text-muted-foreground">
-                Start exploring our collection and place your first pre-order!
-              </p>
-              <Button asChild className="mt-4">
-                <Link href="/">Browse Art Toys</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleEdit(order)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleDelete(order._id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   );

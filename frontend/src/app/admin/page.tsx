@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Navigation from '@/components/Navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
+import { useState, useEffect } from "react";
+import Navigation from "@/components/Navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -16,38 +16,42 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { toast } from 'sonner';
-import { Plus, Edit, Trash2, Package } from 'lucide-react';
-import { ArtToy } from '@/types/arttoy';
-import { format } from 'date-fns';
-
-const mockArtToys: ArtToy[] = [
-  {
-    id: '1',
-    sku: 'AT-001',
-    name: 'Cosmic Explorer',
-    description: 'Limited edition space-themed collectible',
-    arrivalDate: '2025-12-01',
-    availableQuota: 50,
-    posterPicture: 'https://images.unsplash.com/photo-1581235720704-06d3acfcb36f?w=500&q=80',
-  },
-];
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { Plus, Edit, Trash2, Package } from "lucide-react";
+import { ArtToy } from "@/types/arttoy";
+import { format } from "date-fns";
 
 const AdminDashboard = () => {
-  const [artToys, setArtToys] = useState<ArtToy[]>(mockArtToys);
+  const [artToys, setArtToys] = useState<ArtToy[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingToy, setEditingToy] = useState<ArtToy | null>(null);
   const [formData, setFormData] = useState({
-    sku: '',
-    name: '',
-    description: '',
-    arrivalDate: '',
+    sku: "",
+    name: "",
+    description: "",
+    arrivalDate: "",
     availableQuota: 0,
-    posterPicture: '',
+    posterPicture: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const fetchArtToys = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/arttoys`
+        );
+        const json = await res.json();
+        setArtToys(Array.isArray(json.data) ? json.data : []);
+      } catch (error) {
+        toast.error("Failed to fetch data");
+        setArtToys([]);
+      }
+    };
+    fetchArtToys();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const arrivalDate = new Date(formData.arrivalDate);
@@ -55,22 +59,68 @@ const AdminDashboard = () => {
     today.setHours(0, 0, 0, 0);
 
     if (arrivalDate < today) {
-      toast.error('Arrival date cannot be earlier than today');
+      toast.error("Arrival date cannot be earlier than today");
       return;
     }
 
     if (editingToy) {
-      setArtToys(artToys.map(toy => 
-        toy.id === editingToy.id ? { ...toy, ...formData } : toy
-      ));
-      toast.success('Art toy updated successfully');
+      try {
+        const token = localStorage.getItem("token");
+
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/arttoys/${editingToy._id}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(formData),
+          }
+        );
+
+        const json = await res.json();
+        if (res.ok && json.data) {
+          setArtToys(
+            artToys.map((toy) => (toy._id === editingToy._id ? json.data : toy))
+          );
+          toast.success("Art toy updated successfully");
+        } else {
+          toast.error(json.message || "Failed to update art toy");
+          return;
+        }
+      } catch (error) {
+        toast.error("Failed to update art toy");
+        return;
+      }
     } else {
-      const newToy: ArtToy = {
-        id: Date.now().toString(),
-        ...formData,
-      };
-      setArtToys([...artToys, newToy]);
-      toast.success('Art toy created successfully');
+      try {
+        const token = localStorage.getItem("token");
+
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/arttoys`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(formData),
+          }
+        );
+
+        const json = await res.json();
+        if (res.ok && json.data) {
+          setArtToys([...artToys, json.data]);
+          toast.success("Art toy created successfully");
+        } else {
+          toast.error(json.message || "Failed to create art toy");
+          return;
+        }
+      } catch (error) {
+        toast.error("Failed to create art toy");
+        return;
+      }
     }
 
     resetForm();
@@ -89,19 +139,38 @@ const AdminDashboard = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    setArtToys(artToys.filter(toy => toy.id !== id));
-    toast.success('Art toy deleted successfully');
+  const handleDelete = async (_id: string) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/arttoys/${_id}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const json = await res.json();
+      if (res.ok) {
+        setArtToys(artToys.filter((toy) => toy._id !== _id));
+        toast.success("Art toy deleted successfully");
+      } else {
+        toast.error(json.message || "Failed to delete art toy");
+      }
+    } catch {
+      toast.error("Failed to delete art toy");
+    }
   };
 
   const resetForm = () => {
     setFormData({
-      sku: '',
-      name: '',
-      description: '',
-      arrivalDate: '',
+      sku: "",
+      name: "",
+      description: "",
+      arrivalDate: "",
       availableQuota: 0,
-      posterPicture: '',
+      posterPicture: "",
     });
     setEditingToy(null);
     setIsDialogOpen(false);
@@ -110,12 +179,16 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      
+
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-            <p className="text-muted-foreground mt-1">Manage your art toy inventory</p>
+            <h1 className="text-3xl font-bold text-foreground">
+              Admin Dashboard
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Manage your art toy inventory
+            </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
@@ -126,9 +199,13 @@ const AdminDashboard = () => {
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>{editingToy ? 'Edit Art Toy' : 'Add New Art Toy'}</DialogTitle>
+                <DialogTitle>
+                  {editingToy ? "Edit Art Toy" : "Add New Art Toy"}
+                </DialogTitle>
                 <DialogDescription>
-                  {editingToy ? 'Update the art toy details' : 'Create a new art toy listing'}
+                  {editingToy
+                    ? "Update the art toy details"
+                    : "Create a new art toy listing"}
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -138,7 +215,9 @@ const AdminDashboard = () => {
                     <Input
                       id="sku"
                       value={formData.sku}
-                      onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, sku: e.target.value })
+                      }
                       required
                     />
                   </div>
@@ -149,7 +228,12 @@ const AdminDashboard = () => {
                       type="number"
                       min="0"
                       value={formData.availableQuota}
-                      onChange={(e) => setFormData({ ...formData, availableQuota: parseInt(e.target.value) })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          availableQuota: parseInt(e.target.value),
+                        })
+                      }
                       required
                     />
                   </div>
@@ -159,7 +243,9 @@ const AdminDashboard = () => {
                   <Input
                     id="name"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                     required
                   />
                 </div>
@@ -168,7 +254,9 @@ const AdminDashboard = () => {
                   <Textarea
                     id="description"
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
                     rows={3}
                     required
                   />
@@ -179,7 +267,9 @@ const AdminDashboard = () => {
                     id="arrivalDate"
                     type="date"
                     value={formData.arrivalDate}
-                    onChange={(e) => setFormData({ ...formData, arrivalDate: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, arrivalDate: e.target.value })
+                    }
                     required
                   />
                 </div>
@@ -189,7 +279,12 @@ const AdminDashboard = () => {
                     id="posterPicture"
                     type="url"
                     value={formData.posterPicture}
-                    onChange={(e) => setFormData({ ...formData, posterPicture: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        posterPicture: e.target.value,
+                      })
+                    }
                     placeholder="https://example.com/image.jpg"
                     required
                   />
@@ -199,7 +294,7 @@ const AdminDashboard = () => {
                     Cancel
                   </Button>
                   <Button type="submit">
-                    {editingToy ? 'Update' : 'Create'}
+                    {editingToy ? "Update" : "Create"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -209,7 +304,7 @@ const AdminDashboard = () => {
 
         <div className="grid gap-4">
           {artToys.map((toy) => (
-            <Card key={toy.id}>
+            <Card key={toy._id}>
               <CardContent className="p-6">
                 <div className="flex gap-6">
                   <img
@@ -221,13 +316,23 @@ const AdminDashboard = () => {
                     <div className="flex items-start justify-between">
                       <div>
                         <h3 className="text-xl font-semibold">{toy.name}</h3>
-                        <p className="text-sm text-muted-foreground">SKU: {toy.sku}</p>
+                        <p className="text-sm text-muted-foreground">
+                          SKU: {toy.sku}
+                        </p>
                       </div>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="icon" onClick={() => handleEdit(toy)}>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleEdit(toy)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="icon" onClick={() => handleDelete(toy.id)}>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleDelete(toy._id)}
+                        >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
@@ -235,7 +340,8 @@ const AdminDashboard = () => {
                     <p className="text-muted-foreground">{toy.description}</p>
                     <div className="flex items-center gap-4 text-sm">
                       <Badge variant="outline">
-                        Arrives: {format(new Date(toy.arrivalDate), 'MMM dd, yyyy')}
+                        Arrives:{" "}
+                        {format(new Date(toy.arrivalDate), "MMM dd, yyyy")}
                       </Badge>
                       <div className="flex items-center gap-1">
                         <Package className="h-4 w-4" />

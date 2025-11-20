@@ -188,6 +188,9 @@ export default function OrdersPage() {
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
+                      User: {order.user?.name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
                       Ordered on:{" "}
                       {format(new Date(order.createdAt), "MMM dd, yyyy")}
                     </p>
